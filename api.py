@@ -1,6 +1,5 @@
 from datetime import datetime
-import email
-from email.policy import default
+
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
