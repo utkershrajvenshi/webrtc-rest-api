@@ -1,4 +1,3 @@
-from crypt import methods
 from datetime import datetime
 
 from flask import Flask, render_template, request, jsonify
@@ -10,7 +9,6 @@ import os
 from forms import SignUpForm
 
 # importing forms.py, the container for signup form
-import forms.py
 
 # Initialising app
 app = Flask(__name__)
@@ -22,6 +20,7 @@ basedir = os.path.join(basedir, 'databases')
 # Adding the directory address in app configuration for SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'maindb.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = "abcd1234ndwek"
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -61,7 +60,7 @@ class User(db.Model):
     # Specify a foreign key for friends, db.ForeignKey('users.id'). This should seed the friends column
     # with the data we want
     friend_id = db.Column(db.Integer, db.ForeignKey('users.uid'))
-    friends = db.relationship('User', remote_side = [uid], useList=True)
+    friends = db.relationship('User', remote_side = [uid])
 
     # Storing meetings for host
     meeting_host = db.relationship('Meetings', backref='meetings')
