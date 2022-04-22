@@ -1,10 +1,16 @@
+from crypt import methods
 from datetime import datetime
 
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 
 # For interacting with the Operating System to generate base directory address
 import os
+from forms import SignUpForm
+
+# importing forms.py, the container for signup form
+import forms.py
 
 # Initialising app
 app = Flask(__name__)
@@ -18,6 +24,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'ma
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+ma = Marshmallow(app)
 
 # Creating models for our app
 class User(db.Model):
@@ -76,7 +83,10 @@ class Meetings(db.Model):
     # Point to user uids here for audience (Many-To-Many relationship)
     audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
 
-
+@app.route('/generateKey', methods=['GET', 'POST'])
+def generateKey():
+    signUpForm = SignUpForm()
+    return render_template('generate.html', form=signUpForm)
 
 # Creating the database
 db.create_all()
