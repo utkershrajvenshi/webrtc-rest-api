@@ -1,12 +1,5 @@
 import uuid
 
 class GenerateAPIKey:
-    def __init__(self, email) -> None:
-        self.email = email
-        self.generate()
-    
-    def generate(self):
-        pass
-
-    def getKey():
-        pass
+    def __init__(self) -> None:
+        return uuid.uuid4().hex

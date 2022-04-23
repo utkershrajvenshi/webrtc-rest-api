@@ -81,6 +81,11 @@ class Meetings(db.Model):
     # Point to user uids here for audience (Many-To-Many relationship)
     audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
 
+class APIKey(db.Model):
+    email = db.Column(db.String, primary_key=True, nullable=False)
+    password_hash = db.Column(db.String, nullable=False)
+    api_key = db.Column(db.String, nullable=False)
+
 @app.route('/generateKey', methods=['GET', 'POST'])
 def generateKey():
     signUpForm = SignUpForm()
@@ -89,8 +94,7 @@ def generateKey():
         password = signUpForm.password.data
 
         # Generate the API Key for provided email
-        genKey = generate_key.GenerateAPIKey(mail)
-        apiKey = genKey.getKey()
+        apiKey = generate_key.GenerateAPIKey(mail)
     return render_template('generate.html', form=signUpForm)
 
 # Creating the database
