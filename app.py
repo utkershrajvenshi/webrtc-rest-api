@@ -25,6 +25,7 @@ db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
 # Creating models for our app
+# User model
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -71,6 +72,7 @@ meeting_audience = db.Table('meeting_audience',
     db.Column('audience_id', db.Integer, db.ForeignKey('users.uid'), primary_key=True)
 )
 
+# Model for meetings
 class Meetings(db.Model):
     __tablename__ = 'meetings'
 
@@ -81,6 +83,7 @@ class Meetings(db.Model):
     # Point to user uids here for audience (Many-To-Many relationship)
     audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
 
+# Model for storing api keys corresponding to email
 class APIKey(db.Model):
     email = db.Column(db.String, primary_key=True, nullable=False)
     password_hash = db.Column(db.String, nullable=False)
