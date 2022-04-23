@@ -8,8 +8,7 @@ from flask_marshmallow import Marshmallow
 import os
 from forms import SignUpForm
 
-# importing forms.py, the container for signup form
-
+import generate_key
 # Initialising app
 app = Flask(__name__)
 
@@ -85,6 +84,13 @@ class Meetings(db.Model):
 @app.route('/generateKey', methods=['GET', 'POST'])
 def generateKey():
     signUpForm = SignUpForm()
+    if signUpForm.validate_on_submit():
+        mail = signUpForm.email.data
+        password = signUpForm.password.data
+
+        # Generate the API Key for provided email
+        genKey = generate_key.GenerateAPIKey(mail)
+        apiKey = genKey.getKey()
     return render_template('generate.html', form=signUpForm)
 
 # Creating the database
