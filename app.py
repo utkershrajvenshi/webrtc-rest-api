@@ -19,7 +19,7 @@ app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = os.path.join(basedir, 'databases')
 
-# Adding the directory address in app configuration for SQLAlchemy
+# Modifying app configuration variables of our app
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'maindb.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = "abcd1234ndwek"
@@ -71,7 +71,6 @@ class User(db.Model):
     # Storing meetings for host
     meeting_host = db.relationship('Meetings', backref='meetings')
 
-
 # Association table for implementing  many-to-many relationship between user and meetings
 meeting_audience = db.Table('meeting_audience',
     db.Column('meeting_id', db.Integer, db.ForeignKey('meetings.meeting_id'), primary_key = True),
@@ -111,7 +110,8 @@ def generateKey():
         user_key = APIKey(email=mail, password_hash=passwordHash, api_key=apiKey)
         db.session.add(user_key)
         db.session.commit()
-
+        success_msg = "API Key generated for {} is {}. Include the key in your POST requests to the server with the title ['API_KEY']".format(mail, apiKey)
+        return render_template('generate.html', message=success_msg)
     return render_template('generate.html', form=signUpForm)
 
 # Creating the database

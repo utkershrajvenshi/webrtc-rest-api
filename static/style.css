@@ -6,12 +6,19 @@ body{
     font-family: 'Inter', sans-serif;
 }
 
-h1{
-    font-weight: 700;
+h1, h4{
     color: white;
     width: 70%;
     margin: 40px auto 10px;
     text-align: center;
+}
+
+h1{
+    font-weight: 700;
+}
+
+h6{
+    font-weight: 400;
 }
 
 p{

@@ -18,9 +18,9 @@
 </head>
 <body>
     <h1>Generate an API Key</h1>
+    {% if form %}
     <p>Welcome to the portal. Please fill the form below to obtain a secret key and use the REST API for WebRTC service.</p>
     <br>
-    {% if form %}
     <div>
         <form action="{{url_for('generateKey')}}" method="POST">
         <!-- Email Field -->
@@ -51,6 +51,9 @@
         {{ form.submit }}
         </form>
     </div>
+    {% endif %}
+    {% if message %}
+    <h6>{{ message }}</h6>
     {% endif %}
 </body>
 </html>
