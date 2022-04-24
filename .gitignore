@@ -1,5 +1,5 @@
 # Ignore all database files
-databases
+databases/
 
 # Ignore key generation file
 generate_key.py
