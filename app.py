@@ -1,3 +1,4 @@
+from crypt import methods
 from datetime import datetime
 
 from flask import Flask, render_template, request, jsonify
@@ -9,6 +10,8 @@ import os
 from forms import SignUpForm
 
 import generate_key
+from passlib.hash import sha256_crypt
+
 # Initialising app
 app = Flask(__name__)
 
@@ -20,6 +23,9 @@ basedir = os.path.join(basedir, 'databases')
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'maindb.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = "abcd1234ndwek"
+app.config['SQLALCHEMY_BINDS'] = {
+    'keys' : "sqlite:///" + os.path.join(basedir, 'keysdb.sqlite')
+}
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -85,19 +91,27 @@ class Meetings(db.Model):
 
 # Model for storing api keys corresponding to email
 class APIKey(db.Model):
+    __bind_key__ = 'keys'
     email = db.Column(db.String, primary_key=True, nullable=False)
     password_hash = db.Column(db.String, nullable=False)
     api_key = db.Column(db.String, nullable=False)
+
+# Creating the keys database
+db.create_all(bind='keys')
 
 @app.route('/generateKey', methods=['GET', 'POST'])
 def generateKey():
     signUpForm = SignUpForm()
     if signUpForm.validate_on_submit():
         mail = signUpForm.email.data
-        password = signUpForm.password.data
+        passwordHash = sha256_crypt.hash(signUpForm.password.data)
 
         # Generate the API Key for provided email
-        apiKey = generate_key.GenerateAPIKey(mail)
+        apiKey = generate_key.generateAPIKey()
+        user_key = APIKey(email=mail, password_hash=passwordHash, api_key=apiKey)
+        db.session.add(user_key)
+        db.session.commit()
+
     return render_template('generate.html', form=signUpForm)
 
 # Creating the database

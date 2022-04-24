@@ -59,3 +59,8 @@ div {
     padding: 20px;
     margin: auto 25%;
 }
+
+.errors{
+    color: rgb(209, 0, 0);
+    font-size: 12px;
+}
