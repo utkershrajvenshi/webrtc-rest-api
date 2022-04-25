@@ -36,10 +36,10 @@ class User(db.Model):
 	__tablename__ = 'users'
 
 	# Primary Key
-	uid = db.Column(db.Integer, primary_key = True)
+	# uid = db.Column(db.Integer, primary_key = True)
 
-	# Store email id, either from frontend or through google integration
-	email = db.Column(db.String, nullable=False)
+	# Store email id, either from frontend or through google integration. Also the primary key
+	email = db.Column(db.String, primary_key=True, nullable=False)
 	first_name = db.Column(db.String(20))
 	last_name = db.Column(db.String(30))
 
@@ -65,8 +65,8 @@ class User(db.Model):
 	# Try self referencing the table 'users'
 	# Specify a foreign key for friends, db.ForeignKey('users.id'). This should seed the friends column
 	# with the data we want
-	friend_id = db.Column(db.Integer, db.ForeignKey('users.uid'))
-	friends = db.relationship('User', remote_side = [uid])
+	friend_id = db.Column(db.Integer, db.ForeignKey('users.email'))
+	friends = db.relationship('User', remote_side = [email])
 
 	# Storing meetings for host
 	meeting_host = db.relationship('Meetings', backref='meetings')
@@ -74,7 +74,7 @@ class User(db.Model):
 # Association table for implementing  many-to-many relationship between user and meetings
 meeting_audience = db.Table('meeting_audience',
 	db.Column('meeting_id', db.Integer, db.ForeignKey('meetings.meeting_id'), primary_key = True),
-	db.Column('audience_id', db.Integer, db.ForeignKey('users.uid'), primary_key=True)
+	db.Column('audience_id', db.Integer, db.ForeignKey('users.email'), primary_key=True)
 )
 
 # Model for meetings
@@ -82,21 +82,26 @@ class Meetings(db.Model):
 	__tablename__ = 'meetings'
 
 	meeting_id = db.Column(db.Integer, primary_key=True)
+	title = db.Column(db.String(100))
+	endnotes = db.Column(db.String(500))
 	at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 	# Point to User id here for host (One-To-Many relationship)
-	host = db.Column(db.String, db.ForeignKey('users.uid'), nullable=False)
+	host = db.Column(db.String, db.ForeignKey('users.email'), nullable=False)
 	# Point to user uids here for audience (Many-To-Many relationship)
 	audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
 
 # Model for storing api keys corresponding to email
 class APIKey(db.Model):
 	__bind_key__ = 'keys'
-	email = db.Column(db.String, primary_key=True, nullable=False)
+	email = db.Column(db.String, nullable=False)
 	password_hash = db.Column(db.String, nullable=False)
-	api_key = db.Column(db.String, nullable=False)
+	api_key = db.Column(db.String, primary_key=True, nullable=False)
 
 # Creating the keys database
 db.create_all(bind='keys')
+
+# Creating the main database
+db.create_all()
 
 @app.route('/generateKey', methods=['GET', 'POST'])
 def generateKey():
@@ -114,8 +119,6 @@ def generateKey():
 		return render_template('generate.html', message=success_msg)
 	return render_template('generate.html', form=signUpForm)
 
-# Creating the database
-db.create_all()
 
 # Starting the server at port 3300 with debug flag set to true.
 # TODO: Set the debug flag to false in production mode
