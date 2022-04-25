@@ -1,59 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- For importing style.css dynamically -->
-    <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+	<!-- For importing style.css dynamically -->
+	<link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
 
-    <!-- For importing google font Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- For the title of the page -->
-    <title>Generate API Key</title>
+	<!-- For importing google font Inter -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+	
+	<!-- For the title of the page -->
+	<title>Generate API Key</title>
 </head>
 <body>
-    <h1>Generate an API Key</h1>
-    {% if form %}
-    <p>Welcome to the portal. Please fill the form below to obtain a secret key and use the REST API for WebRTC service.</p>
-    <br>
-    <div>
-        <form action="{{url_for('generateKey')}}" method="POST">
-        <!-- Email Field -->
-        {{ form.email.label }}
-        <br>
-        {{ form.email }}
-        {% if form.email.errors %}
-        <ul class="errors">
-            {% for error in form.email.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        <br>
-        <!-- Password Field -->
-        {{ form.password.label }}
-        <br>
-        {{ form.password }}
-        {% if form.password.errors %}
-        <ul class="errors">
-            {% for error in form.password.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        <br>
-        {{ form.csrf_token }}
-        {{ form.submit }}
-        </form>
-    </div>
-    {% endif %}
-    {% if message %}
-    <h6>{{ message }}</h6>
-    {% endif %}
+	<h1>Generate an API Key</h1>
+	{% if form %}
+	<p>Welcome to the portal. Please fill the form below to obtain a secret key and use the REST API for WebRTC service.</p>
+	<br>
+	<div>
+		<form action="{{url_for('generateKey')}}" method="POST">
+		<!-- Email Field -->
+		{{ form.email.label }}
+		<br>
+		{{ form.email }}
+		{% if form.email.errors %}
+		<ul class="errors">
+			{% for error in form.email.errors %}
+			<li>{{ error }}</li>
+			{% endfor %}
+		</ul>
+		{% endif %}
+		<br>
+		<!-- Password Field -->
+		{{ form.password.label }}
+		<br>
+		{{ form.password }}
+		{% if form.password.errors %}
+		<ul class="errors">
+			{% for error in form.password.errors %}
+			<li>{{ error }}</li>
+			{% endfor %}
+		</ul>
+		{% endif %}
+		<br>
+		{{ form.csrf_token }}
+		{{ form.submit }}
+		</form>
+	</div>
+	{% endif %}
+	{% if message %}
+	<h6>{{ message }}</h6>
+	{% endif %}
 </body>
 </html>
