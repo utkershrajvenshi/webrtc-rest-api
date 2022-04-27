@@ -138,19 +138,26 @@ def generateKey():
 		mail = signUpForm.email.data
 		password = signUpForm.password.data
 
-		queriedUser = User.query.get(mail)
+		queriedUser = APIKey.query.get(mail)
 		if queriedUser is None:
 			# Generate the API Key for provided email
 			apiKey = generate_key.generateAPIKey()
 			user_key = APIKey(email=mail, password_hash=sha256_crypt.hash(password), api_key=apiKey)
+			
+			# Adding the APIKey instance to the db
 			db.session.add(user_key)
-			db.session.commit()
+			try:
+				# Committing the changes to the database
+				db.session.commit()
+			except Exception as e:
+				db.session.rollback()
+			
 			success_msg = "API Key generated for {} is {}. Include the key in your POST requests to the server with the title ['API_KEY']".format(mail, apiKey)
 			return render_template('generate.html', message=success_msg)
 		else:
-			apiUser = APIKey.query.get(mail)
-			if sha256_crypt.verify(password, apiUser.password_hash):
-				myKey = apiUser.api_key
+			# apiUser = APIKey.query.get(mail)
+			if sha256_crypt.verify(password, queriedUser.password_hash):
+				myKey = queriedUser.api_key
 				return render_template('generate.html', message="Your API key is {}".format(myKey))
 			else:
 				return render_template('generate.html', form=signUpForm, error_msg="Wrong password entered. Please try again.")
