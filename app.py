@@ -111,12 +111,17 @@ class Meetings(db.Model):
 
 	meeting_id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(100))
-	endnotes = db.Column(db.String(500))
 	at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 	# Point to User id here for host (One-To-Many relationship)
 	host = db.Column(db.String, db.ForeignKey('users.email'), nullable=False)
 	# Point to user uids here for audience (Many-To-Many relationship)
 	audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
+
+	def __init__(self, title, at, host, audience) -> None:
+		self.title = title
+		self.at = at
+		self.host = host
+		self.audience = audience
 
 # Model for storing api keys corresponding to email
 class APIKey(db.Model):
