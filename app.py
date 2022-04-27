@@ -38,10 +38,23 @@ class User(db.Model):
 	# Primary Key
 	# uid = db.Column(db.Integer, primary_key = True)
 
-	# Store email id, either from frontend or through google integration. Also the primary key
+	"""
+	@param email: Store email id, either from frontend or through Google integration. Also the primary key
+	Email id is the primary key because when onboarding a new user we will
+	lookup our database to find if a user with the email already exists
+	If it exists, then simply login. Otherwise ask for name and other details
+	"""
 	email = db.Column(db.String, primary_key=True, nullable=False)
+	
 	first_name = db.Column(db.String(20))
 	last_name = db.Column(db.String(30))
+	
+	"""
+	@param nickname: A nickname for our user. This will come in handy when other users on the platform
+	want to befriend this user.
+	This way there won't be the hassle of remembering the friend's email id to communicate.
+	"""
+	nickname = db.Column(db.String, db.ForeignKey('nicknames.nickname'), nullable = False)
 
 	# Store the OAuth token. If not that then store password hash here
 	# TODO: Use persistent storage on the device to store the auth token for seamless authentication
@@ -71,6 +84,21 @@ class User(db.Model):
 	# Storing meetings for host
 	meeting_host = db.relationship('Meetings', backref='meetings')
 
+	def __init__(self, email, first_name, last_name, nickname, avatar) -> None:
+		self.email = email
+		self.first_name = first_name
+		self.last_name = last_name
+		self.nickname = nickname
+		self.avatar = avatar
+		self.created = datetime.utcnow()
+
+# Nickname lookup table. This table eliminates O(n) lookup of database for allocating nicknames
+class Nickname(db.Model):
+	__tablename__ = 'nicknames'
+
+	nickname = db.Column(db.String(20), primary_key=True)
+	email = db.relationship('User', backref='nickname_email', uselist=False)
+
 # Association table for implementing  many-to-many relationship between user and meetings
 meeting_audience = db.Table('meeting_audience',
 	db.Column('meeting_id', db.Integer, db.ForeignKey('meetings.meeting_id'), primary_key = True),
@@ -93,9 +121,9 @@ class Meetings(db.Model):
 # Model for storing api keys corresponding to email
 class APIKey(db.Model):
 	__bind_key__ = 'keys'
-	email = db.Column(db.String, nullable=False)
+	email = db.Column(db.String, primary_key=True, nullable=False)
 	password_hash = db.Column(db.String, nullable=False)
-	api_key = db.Column(db.String, primary_key=True, nullable=False)
+	api_key = db.Column(db.String, nullable=False)
 
 # Creating the keys database
 db.create_all(bind='keys')
@@ -108,15 +136,24 @@ def generateKey():
 	signUpForm = SignUpForm()
 	if signUpForm.validate_on_submit():
 		mail = signUpForm.email.data
-		passwordHash = sha256_crypt.hash(signUpForm.password.data)
+		password = signUpForm.password.data
 
-		# Generate the API Key for provided email
-		apiKey = generate_key.generateAPIKey()
-		user_key = APIKey(email=mail, password_hash=passwordHash, api_key=apiKey)
-		db.session.add(user_key)
-		db.session.commit()
-		success_msg = "API Key generated for {} is {}. Include the key in your POST requests to the server with the title ['API_KEY']".format(mail, apiKey)
-		return render_template('generate.html', message=success_msg)
+		queriedUser = User.query.get(mail)
+		if queriedUser is None:
+			# Generate the API Key for provided email
+			apiKey = generate_key.generateAPIKey()
+			user_key = APIKey(email=mail, password_hash=sha256_crypt.hash(password), api_key=apiKey)
+			db.session.add(user_key)
+			db.session.commit()
+			success_msg = "API Key generated for {} is {}. Include the key in your POST requests to the server with the title ['API_KEY']".format(mail, apiKey)
+			return render_template('generate.html', message=success_msg)
+		else:
+			apiUser = APIKey.query.get(mail)
+			if sha256_crypt.verify(password, apiUser.password_hash):
+				myKey = apiUser.api_key
+				return render_template('generate.html', message="Your API key is {}".format(myKey))
+			else:
+				return render_template('generate.html', form=signUpForm, error_msg="Wrong password entered. Please try again.")
 	return render_template('generate.html', form=signUpForm)
 
 

@@ -21,6 +21,8 @@ h4{
 	font-weight: 400;
 }
 
+.errors
+
 p{
 	font-weight: 400;
 	color: white;
@@ -68,6 +70,6 @@ div {
 }
 
 .errors{
-	color: rgb(209, 0, 0);
-	font-size: 12px;
+	color: rgb(255, 0, 0);
+	font-size: 20px;
 }

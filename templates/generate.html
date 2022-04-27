@@ -18,6 +18,12 @@
 </head>
 <body>
 	<h1>Generate an API Key</h1>
+	{% if error_msg %}
+	<h4 class="errors">{{ error_msg }}</h4>
+	{% endif %}
+	{% if message %}
+	<h4>{{ message }}</h4>
+	{% endif %}
 	{% if form %}
 	<p>Welcome to the portal. Please fill the form below to obtain a secret key and use the REST API for WebRTC service.</p>
 	<br>
@@ -51,9 +57,6 @@
 		{{ form.submit }}
 		</form>
 	</div>
-	{% endif %}
-	{% if message %}
-	<h6>{{ message }}</h6>
 	{% endif %}
 </body>
 </html>
