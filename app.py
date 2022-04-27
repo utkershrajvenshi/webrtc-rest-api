@@ -131,6 +131,7 @@ db.create_all(bind='keys')
 # Creating the main database
 db.create_all()
 
+# View function for generating api key
 @app.route('/generateKey', methods=['GET', 'POST'])
 def generateKey():
 	signUpForm = SignUpForm()
@@ -162,6 +163,68 @@ def generateKey():
 			else:
 				return render_template('generate.html', form=signUpForm, error_msg="Wrong password entered. Please try again.")
 	return render_template('generate.html', form=signUpForm)
+
+# Function for creating the user in the database
+@app.route('/create-user', methods=["POST"])
+def createUser():
+	email = request.json['email']
+	first_name = request.json['first_name']
+	last_name = request.json['last_name']
+	avatar = request.json['avatar']
+	nickname = request.json['nickname']
+
+	new_user = User(email, first_name, last_name, nickname, avatar)
+
+	# Adding the user to the database
+	db.session.add(new_user)
+	try:
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+	
+	return jsonify(new_user)
+
+# Function for updating the user details
+@app.route('/update-user/<u_email>', methods=["PUT"])
+def updateUser(u_email):
+	user = User.query.get(u_email)
+
+	email = request.json['email']
+	first_name = request.json['first_name']
+	last_name = request.json['last_name']
+	avatar = request.json['avatar']
+	nickname = request.json['nickname']
+
+	user.email = email
+	user.first_name = first_name
+	user.last_name = last_name
+	user.nickname = nickname
+	user.avatar = avatar
+
+	try:
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+	
+	pass
+
+# Function for deleting a user
+@app.route('/delete-user/<u_email>', methods=["DELETE"])
+def deleteUser(u_email):
+	del_user = User.query.get(u_email)
+	
+	# Deleting specified user from the database
+	db.session.delete(del_user)
+	try:
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+	
+	pass
+
+# Function for scheduling a meeting
+@app.route('/create-meeting', methods=["POST"])
+def createMeeting():
 
 
 # Starting the server at port 3300 with debug flag set to true.
