@@ -230,7 +230,20 @@ def deleteUser(u_email):
 # Function for scheduling a meeting
 @app.route('/create-meeting', methods=["POST"])
 def createMeeting():
+	title = request.json['title']
+	at = request.json['at']
+	host = request.json['host']
+	audience = request.json['audience']
 
+	new_meeting = Meetings(title, at, host, audience)
+
+	db.session.add(new_meeting)
+	try:
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+	
+	return jsonify(new_meeting)
 
 # Starting the server at port 3300 with debug flag set to true.
 # TODO: Set the debug flag to false in production mode
