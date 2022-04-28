@@ -245,6 +245,27 @@ def createMeeting():
 	
 	return jsonify(new_meeting)
 
+# Function for befriending a user
+@app.route('/befriend', methods=["POST"])
+def befriend():
+	friend0 = request.json['friend0']
+	friend1 = request.json['friend1']
+
+	user0 = User.query.get(friend0)
+	user1 = User.query.get(friend1)
+
+	user0.friends.append(user1)
+	user1.friends.append(user0)
+
+	return jsonify(user0, user1)
+
+# Function for getting all meetings of a user
+
+# Function for getting all friends of a user
+
+# Function for getting details of a user
+# Could be called when user needs to befriend another user
+
 # Starting the server at port 3300 with debug flag set to true.
 # TODO: Set the debug flag to false in production mode
 if __name__=="__main__":
