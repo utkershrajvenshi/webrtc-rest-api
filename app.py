@@ -218,13 +218,16 @@ def verifyIfAvailable(nickname):
 def updateUser(u_email):
 	user = User.query.get(u_email)
 
-	email = request.json['email']
 	first_name = request.json['first_name']
 	last_name = request.json['last_name']
 	avatar = request.json['avatar']
 	nickname = request.json['nickname']
 
-	user.email = email
+	new_name = Nickname.query.get(nickname)
+	if new_name is None:
+		Nickname.query.get(user.nickname).nickname = nickname
+	else:
+		return jsonify({"error" : "The nickname is not available. Please choose another one."})
 	user.first_name = first_name
 	user.last_name = last_name
 	user.nickname = nickname
@@ -235,7 +238,7 @@ def updateUser(u_email):
 	except Exception as e:
 		db.session.rollback()
 	
-	pass
+	return jsonify(user_schema.dump(user))
 
 # Function for getting all the users in the database
 @app.route('/get-users', methods=["GET"])
@@ -255,7 +258,7 @@ def deleteUser(u_email):
 	except Exception as e:
 		db.session.rollback()
 	
-	pass
+	return jsonify(user_schema.dump(del_user))
 
 # Function for scheduling a meeting
 @app.route('/create-meeting', methods=["POST"])
@@ -265,7 +268,12 @@ def createMeeting():
 	host = request.json['host']
 	audience = request.json['audience']
 
-	new_meeting = Meetings(title, at, host, audience)
+	new_meeting = Meetings(
+		title=title,
+		at=at,
+		host=host,
+		audience=audience
+	)
 
 	db.session.add(new_meeting)
 	try:
