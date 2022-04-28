@@ -1,4 +1,3 @@
-from crypt import methods
 from datetime import datetime
 
 from flask import Flask, render_template, request, jsonify
@@ -58,7 +57,7 @@ class User(db.Model):
 
 	# Store the OAuth token. If not that then store password hash here
 	# TODO: Use persistent storage on the device to store the auth token for seamless authentication
-	auth_token = db.Column(db.String, unique=True, nullable=False)
+	# auth_token = db.Column(db.String, unique=True, nullable=False)
 
 	# Store url path for profile picture uploaded from database
 	avatar = db.Column(db.String)
@@ -186,16 +185,33 @@ def createUser():
 	avatar = request.json['avatar']
 	nickname = request.json['nickname']
 
-	new_user = User(email, first_name, last_name, nickname, avatar)
+	new_nickname = Nickname(nickname=nickname)
+	new_user = User(
+		email=email,
+		first_name=first_name,
+		last_name=last_name,
+		avatar=avatar,
+		nickname=nickname
+	)
 
-	# Adding the user to the database
+	# Adding the user and nickname to the database
 	db.session.add(new_user)
+	db.session.add(new_nickname)
 	try:
 		db.session.commit()
 	except Exception as e:
 		db.session.rollback()
 	
 	return jsonify(user_schema.dump(new_user))
+
+# Function to verify if the nickname is available
+@app.route("/verify/<nickname>")
+def verifyIfAvailable(nickname):
+	nick = Nickname.query.get(nickname)
+	if nick is None:
+		return jsonify({"available" : True})
+	else:
+		return jsonify({"available" : False})
 
 # Function for updating the user details
 @app.route('/update-user/<u_email>', methods=["PUT"])
@@ -222,10 +238,10 @@ def updateUser(u_email):
 	pass
 
 # Function for getting all the users in the database
-# @app.route('/get-users', methods=["GET"])
-# def getAllUsers():
-#	all_users = User.query.all()
-#	return jsonify(users_schema(all_users))
+@app.route('/get-users', methods=["GET"])
+def getAllUsers():
+	all_users = User.query.all()
+	return jsonify(users_schema.dump(all_users))
 
 # Function for deleting a user
 @app.route('/delete-user/<u_email>', methods=["DELETE"])
