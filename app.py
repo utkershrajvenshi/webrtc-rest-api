@@ -78,7 +78,7 @@ class User(db.Model):
 	# Try self referencing the table 'users'
 	# Specify a foreign key for friends, db.ForeignKey('users.id'). This should seed the friends column
 	# with the data we want
-	friend_id = db.Column(db.Integer, db.ForeignKey('users.email'))
+	friend_of = db.Column(db.Integer, db.ForeignKey('users.email'))
 	friends = db.relationship('User', remote_side = [email])
 
 	# Storing meetings for host
@@ -91,6 +91,14 @@ class User(db.Model):
 		self.nickname = nickname
 		self.avatar = avatar
 		self.created = datetime.utcnow()
+
+# Serialization schema for user model
+class UserSchema(ma.Schema):
+	class Meta:
+		fields = ('email', 'first_name', 'last_name', 'nickname', 'avatar', 'created', 'meeting_host', 'friends', 'friend_of')
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 
 # Nickname lookup table. This table eliminates O(n) lookup of database for allocating nicknames
 class Nickname(db.Model):
@@ -187,7 +195,7 @@ def createUser():
 	except Exception as e:
 		db.session.rollback()
 	
-	return jsonify(new_user)
+	return jsonify(user_schema.dump(new_user))
 
 # Function for updating the user details
 @app.route('/update-user/<u_email>', methods=["PUT"])
@@ -212,6 +220,12 @@ def updateUser(u_email):
 		db.session.rollback()
 	
 	pass
+
+# Function for getting all the users in the database
+# @app.route('/get-users', methods=["GET"])
+# def getAllUsers():
+#	all_users = User.query.all()
+#	return jsonify(users_schema(all_users))
 
 # Function for deleting a user
 @app.route('/delete-user/<u_email>', methods=["DELETE"])
