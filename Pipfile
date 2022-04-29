@@ -11,6 +11,7 @@ flask-wtf = "*"
 marshmallow-sqlalchemy = "*"
 email-validator = "*"
 passlib = "*"
+python-dateutil = "*"
 
 [dev-packages]
 

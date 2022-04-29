@@ -81,7 +81,8 @@ class User(db.Model):
 	friends = db.relationship('User', remote_side = [email])
 
 	# Storing meetings for host
-	meeting_host = db.relationship('Meetings', backref='meetings')
+	# meeting_host = db.relationship('Meetings', backref='meetings')
+	meeting_host = db.relationship('Meetings')
 
 	def __init__(self, email, first_name, last_name, nickname, avatar) -> None:
 		self.email = email
@@ -90,14 +91,6 @@ class User(db.Model):
 		self.nickname = nickname
 		self.avatar = avatar
 		self.created = datetime.utcnow()
-
-# Serialization schema for user model
-class UserSchema(ma.Schema):
-	class Meta:
-		fields = ('email', 'first_name', 'last_name', 'nickname', 'avatar', 'created', 'meeting_host', 'friends', 'friend_of')
-
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
 
 # Nickname lookup table. This table eliminates O(n) lookup of database for allocating nicknames
 class Nickname(db.Model):
@@ -116,19 +109,53 @@ meeting_audience = db.Table('meeting_audience',
 class Meetings(db.Model):
 	__tablename__ = 'meetings'
 
-	meeting_id = db.Column(db.Integer, primary_key=True)
+	meeting_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 	title = db.Column(db.String(100))
 	at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 	# Point to User id here for host (One-To-Many relationship)
 	host = db.Column(db.String, db.ForeignKey('users.email'), nullable=False)
 	# Point to user uids here for audience (Many-To-Many relationship)
-	audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
+	# audience = db.relationship('User', secondary=meeting_audience, backref='meetings')
+	audience = db.relationship('User', secondary=meeting_audience)
 
 	def __init__(self, title, at, host, audience) -> None:
 		self.title = title
 		self.at = at
 		self.host = host
 		self.audience = audience
+
+class MeetingSchema(ma.SQLAlchemyAutoSchema):
+	class Meta:
+		model = Meetings
+	
+	# meeting_id = ma.Integer()
+	# title = ma.String()
+	# at = ma.DateTime()
+	host = ma.String()
+	audience = ma.List(ma.String())
+
+
+meeting_schema = MeetingSchema()
+meetings_schema = MeetingSchema(many=True)
+
+# Serialization schema for user model
+class UserSchema(ma.SQLAlchemyAutoSchema):
+	class Meta:
+		model = User
+
+	# email = ma.Email()
+	# first_name = ma.String()
+	# last_name = ma.String()
+	nickname = ma.String()
+	# avatar = ma.String()
+	# created = ma.DateTime()
+	# meeting_host = ma.List(ma.Nested(MeetingSchema(many=True, only=["id", "title"])))
+	meeting_host = ma.Nested(MeetingSchema(many=True, only=['meeting_id', 'title']))
+	friends = ma.List(ma.Nested(lambda: UserSchema()))
+	friend_of = ma.Nested(lambda: UserSchema())
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 
 # Model for storing api keys corresponding to email
 class APIKey(db.Model):
@@ -244,6 +271,7 @@ def updateUser(u_email):
 @app.route('/get-users', methods=["GET"])
 def getAllUsers():
 	all_users = User.query.all()
+	# print(all_users[0].meeting_host)
 	return jsonify(users_schema.dump(all_users))
 
 # Function for deleting a user
@@ -263,25 +291,53 @@ def deleteUser(u_email):
 # Function for scheduling a meeting
 @app.route('/create-meeting', methods=["POST"])
 def createMeeting():
+	from dateutil import parser
 	title = request.json['title']
 	at = request.json['at']
 	host = request.json['host']
 	audience = request.json['audience']
 
+	audience_user = []
+	for val in audience:
+		email = Nickname.query.get(val['name']).email
+		audience_user.append(email)
+	
 	new_meeting = Meetings(
 		title=title,
-		at=at,
+		at=parser.parse(at),
 		host=host,
-		audience=audience
+		audience=audience_user
 	)
 
 	db.session.add(new_meeting)
 	try:
 		db.session.commit()
 	except Exception as e:
+		print(e)
+		db.session.rollback()
+
+	return jsonify(meeting_schema.dump(new_meeting))
+
+# Function for getting all meetings
+@app.route('/all-meetings', methods=["GET"])
+def getAllMeetings():
+	meetings = Meetings.query.all()
+	return jsonify(meetings_schema.dump(meetings))
+
+# Function for deleting a meeting
+@app.route('/delete-meeting/<int:m_id>', methods=["DELETE"])
+def deleteMeeting(m_id):
+	del_meet = Meetings.query.get(m_id)
+
+	db.session.delete(del_meet)
+	try:
+		db.session.commit()
+		print("Meeting {} successfully deleted".format(m_id))
+	except Exception as e:
+		print("Meeting {} not deleted. Rolling back changes".format(m_id))
 		db.session.rollback()
 	
-	return jsonify(new_meeting)
+	return jsonify(meeting_schema.dump(del_meet))
 
 # Function for befriending a user
 @app.route('/befriend', methods=["POST"])
