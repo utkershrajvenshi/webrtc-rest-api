@@ -78,7 +78,7 @@ class User(db.Model):
 	# Specify a foreign key for friends, db.ForeignKey('users.id'). This should seed the friends column
 	# with the data we want
 	friend_of = db.Column(db.Integer, db.ForeignKey('users.email'))
-	friends = db.relationship('User', remote_side = [email])
+	friends = db.relationship('User', remote_side = [email], uselist=True)
 
 	# Storing meetings for host
 	# meeting_host = db.relationship('Meetings', backref='meetings')
@@ -91,6 +91,7 @@ class User(db.Model):
 		self.nickname = nickname
 		self.avatar = avatar
 		self.created = datetime.utcnow()
+		self.friends = []
 
 # Nickname lookup table. This table eliminates O(n) lookup of database for allocating nicknames
 class Nickname(db.Model):
@@ -151,7 +152,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 	# created = ma.DateTime()
 	# meeting_host = ma.List(ma.Nested(MeetingSchema(many=True, only=["id", "title"])))
 	meeting_host = ma.Nested(MeetingSchema(many=True, only=['meeting_id', 'title']))
-	friends = ma.List(ma.Nested(lambda: UserSchema()))
+	friends = ma.List(ma.Nested(lambda: UserSchema(only=['nickname'])))
 	friend_of = ma.Nested(lambda: UserSchema())
 
 user_schema = UserSchema()
@@ -245,20 +246,21 @@ def verifyIfAvailable(nickname):
 def updateUser(u_email):
 	user = User.query.get(u_email)
 
-	first_name = request.json['first_name']
-	last_name = request.json['last_name']
-	avatar = request.json['avatar']
-	nickname = request.json['nickname']
+	new_first_name = request.json['first_name']
+	new_last_name = request.json['last_name']
+	new_avatar = request.json['avatar']
+	new_nickname = request.json['nickname']
+	new_friends = request.json['friends']
 
-	new_name = Nickname.query.get(nickname)
+	new_name = Nickname.query.get(new_nickname)
 	if new_name is None:
-		Nickname.query.get(user.nickname).nickname = nickname
-	else:
-		return jsonify({"error" : "The nickname is not available. Please choose another one."})
-	user.first_name = first_name
-	user.last_name = last_name
-	user.nickname = nickname
-	user.avatar = avatar
+		Nickname.query.get(user.nickname).nickname = new_nickname
+		user.nickname = new_nickname
+	
+	user.first_name = new_first_name
+	user.last_name = new_last_name
+	user.avatar = new_avatar
+	user.friends = new_friends
 
 	try:
 		db.session.commit()
@@ -319,7 +321,7 @@ def createMeeting():
 	return jsonify(meeting_schema.dump(new_meeting))
 
 # Function for getting all meetings
-@app.route('/all-meetings', methods=["GET"])
+# @app.route('/all-meetings', methods=["GET"])
 def getAllMeetings():
 	meetings = Meetings.query.all()
 	return jsonify(meetings_schema.dump(meetings))
@@ -345,20 +347,49 @@ def befriend():
 	friend0 = request.json['friend0']
 	friend1 = request.json['friend1']
 
-	user0 = User.query.get(friend0)
-	user1 = User.query.get(friend1)
+	user0 = Nickname.query.get(friend0).email
+	user1 = Nickname.query.get(friend1).email
 
 	user0.friends.append(user1)
 	user1.friends.append(user0)
 
-	return jsonify(user0, user1)
+	print(user0)
+	print(user1)
+	try:
+		db.session.commit()
+	except Exception as e:
+		print("error occurred. Rolling back changes.")
+		print(e)
+		db.session.rollback()
+	
+	return jsonify({"msg" : "Friendship successful"})
 
 # Function for getting all meetings of a user
+@app.route('/all-meetings/<u_email>', methods=["GET"])
+def allUserMeetings(u_email):
+	user = User.query.get(u_email)
+	host_of = user.meeting_host
+	audience_of = Meetings.query.filter_by(audience=user).all()
+
+	print(host_of)
+	print(audience_of)
+
+	return jsonify({"msg" : "Success"})
+
 
 # Function for getting all friends of a user
+@app.route('/all-friends/<u_email>', methods=["GET"])
+def getAllFriendsOfAUser(u_email):
+	user_friends = User.query.get(u_email).friends
+
+	return jsonify(UserSchema(many=True, only=['nickname', 'first_name', 'last_name', 'avatar']).dump(user_friends))
 
 # Function for getting details of a user
 # Could be called when user needs to befriend another user
+@app.route('/user-details/<u_nick>')
+def getUserDetails(u_nick):
+	user = Nickname.query.get(u_nick).email
+	return jsonify(UserSchema(only=['nickname', 'avatar']).dump(user))
 
 # Starting the server at port 3300 with debug flag set to true.
 # TODO: Set the debug flag to false in production mode
